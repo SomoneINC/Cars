@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Data Table</title>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // Load the data from the JSON file
+    fetch('data.json')
+      .then(response => response.json())
+      .then(data => {
+        // Create a table from the received data
+        const table = document.createElement('table');
+        const tbody = document.createElement('tbody');
+  
+        data.forEach((row, index) => {
+          const rowElement = document.createElement('tr');
+          if (index === 0) {
+            rowElement.id = 'header-row';
+          }
+          row.forEach(cell => {
+            const cellElement = document.createElement('td');
+            cellElement.textContent = cell;
+            rowElement.appendChild(cellElement);
+          });
+          tbody.appendChild(rowElement);
+        });
+  
+        table.appendChild(tbody);
+        document.body.appendChild(table);
+      });
+  </script>
+</head>
+<body>
+</body>
+</html>
