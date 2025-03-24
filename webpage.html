@@ -3,15 +3,39 @@
 <head>
   <title>Data Table</title>
   <link rel="stylesheet" href="style.css">
+
   <script>
-    // Load the data from the JSON file
-    fetch('Kia.json')
+
+fetch('Holder.json')
   .then(response => response.json())
   .then(data => {
     // Create a table from the received data
     const table = document.createElement('table');
     const tbody = document.createElement('tbody');
 
+    // Create a dropdown menu
+    const dropdown = document.createElement('select');
+    dropdown.id = 'type-filter';
+
+    // Add options to the dropdown menu
+    const types = [...new Set(data.map(row => row[0]))]; // Get unique types from the data
+    types.forEach(type => {
+      const option = document.createElement('option');
+      option.value = type;
+      option.textContent = type;
+      dropdown.appendChild(option);
+    });
+
+    // Add a default option to show all types
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = 'All';
+    dropdown.insertBefore(allOption, dropdown.firstChild);
+
+    // Add the dropdown menu to the page
+    document.body.appendChild(dropdown);
+
+    // Create the table rows
     data.forEach((row, index) => {
       const rowElement = document.createElement('tr');
       if (index === 0) {
@@ -32,6 +56,22 @@
 
     table.appendChild(tbody);
     document.body.appendChild(table);
+
+    // Add an event listener to the dropdown menu
+    dropdown.addEventListener('change', (e) => {
+  const selectedType = e.target.value;
+  const rows = tbody.children;
+
+  // Filter the table rows based on the selected type
+  for (let i = 1; i < rows.length; i++) { // Start iterating from the second row (index 1)
+    const row = rows[i];
+    if (row.children[1].textContent === selectedType || selectedType === 'all') {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  }
+});
   });
   </script>
 </head>

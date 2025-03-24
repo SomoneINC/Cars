@@ -127,7 +127,6 @@ def Process_Page(url,Type):
 
 
 def Scraping(base_url,Type):
-    print(f"made {Type }")
     counter = 1
     
     while True:
@@ -137,12 +136,11 @@ def Scraping(base_url,Type):
             break
         Process_Page(page_url, Type)
         counter += 1
+        print(f"Next page {Type}")
 
     
     # Save the data to a JSON file
-    with open(Type + '.json', 'w') as f:
-        json.dump(saved_data, f)
-    saved_data = []
+    
     end_time = time.time()
     print("Program execution time for : {:.2f} seconds".format(end_time - start_time) + f" {Type}")
 
@@ -154,23 +152,18 @@ def Car_types():
         car_table = soup.find('div', attrs={'align': 'right'})
         links = car_table.find_all('a')
 
-    
-        for link in links :
-
-            Car_links = "https://www.ss.com" + link.get('href')
-            Type = link.text.lower().capitalize()
-            
-            if "Citas markas" == Type :
-                Type = None
-
-
-
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                futures = executor.submit(Scraping, Car_links, Type)
-                for future in concurrent.futures.as_completed(futures):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = {executor.submit(Scraping, "https://www.ss.com" + link.get('href'), link.text.lower().capitalize() if link.text.lower().capitalize() != "Citas markas" else None): link for link in links}
+            for future in concurrent.futures.as_completed(futures):
+                try:
                     future.result()
+                except Exception as e:
+                    print(f"Error: {e}")
         
-        
+        with open('Holder.json', 'w') as f:
+            json.dump(saved_data, f)
+
+        print("Saved =========================")
     except :
         print("Failed")
 
