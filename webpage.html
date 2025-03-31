@@ -3,75 +3,122 @@
 <head>
   <title>Data Table</title>
   <link rel="stylesheet" href="style.css">
-
+  <a href="html.html">Graph</a>
   <script>
 
 fetch('Holder.json')
-  .then(response => response.json())
+  .then(response => {
+    console.log('Received response');
+    return response.json();
+  })
   .then(data => {
-    // Create a table from the received data
-    const table = document.createElement('table');
-    const tbody = document.createElement('tbody');
+    console.log('Received data');
+    console.log(data);
 
-    // Create a dropdown menu
-    const dropdown = document.createElement('select');
-    dropdown.id = 'type-filter';
+    // Extract the data points
+    const dataPoints = data.slice(1);
 
-    // Add options to the dropdown menu
-    const types = [...new Set(data.map(row => row[0]))]; // Get unique types from the data
-    types.forEach(type => {
-      const option = document.createElement('option');
-      option.value = type;
-      option.textContent = type;
-      dropdown.appendChild(option);
-    });
+    // Create an object to store the count of each Marka
+    const markaCount = {};
 
-    // Add a default option to show all types
-    const allOption = document.createElement('option');
-    allOption.value = 'all';
-    allOption.textContent = 'All';
-    dropdown.insertBefore(allOption, dropdown.firstChild);
-
-    // Add the dropdown menu to the page
-    document.body.appendChild(dropdown);
-
-    // Create the table rows
-    data.forEach((row, index) => {
-      const rowElement = document.createElement('tr');
-      if (index === 0) {
-        rowElement.id = 'header-row';
+    // Loop through the data points and count the Marka
+    dataPoints.forEach(point => {
+      const marka = point[0];
+      if (markaCount[marka]) {
+        markaCount[marka]++;
+      } else {
+        markaCount[marka] = 1;
       }
-      // Add a new column for the entry number
-      const entryNumberCell = document.createElement('td');
-      entryNumberCell.textContent = index + 1; // +1 to start from 1 instead of 0
-      rowElement.appendChild(entryNumberCell);
-
-      row.forEach(cell => {
-        const cellElement = document.createElement('td');
-        cellElement.textContent = cell;
-        rowElement.appendChild(cellElement);
-      });
-      tbody.appendChild(rowElement);
     });
 
-    table.appendChild(tbody);
-    document.body.appendChild(table);
+    console.log('Marka count:');
+    console.log(markaCount);
 
-    // Add an event listener to the dropdown menu
-    dropdown.addEventListener('change', (e) => {
-  const selectedType = e.target.value;
-  const rows = tbody.children;
+    // Create an array of labels and datasets
+    const labels = Object.keys(markaCount).sort((a, b) => markaCount[b] - markaCount[a]);
+    const datasets = [
+      {
+        label: 'Marka Count',
+        data: Object.values(markaCount).sort((a, b) => b - a),
+        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+        borderColor: 'rgba(255, 99, 132, 1)',
+        borderWidth: 1
+      }
+    ];
 
-  // Filter the table rows based on the selected type
-  for (let i = 1; i < rows.length; i++) { // Start iterating from the second row (index 1)
-    const row = rows[i];
-    if (row.children[1].textContent === selectedType || selectedType === 'all') {
-      row.style.display = '';
-    } else {
-      row.style.display = 'none';
-    }
-  }
-});
+    console.log('Labels:');
+    console.log(labels);
+    console.log('Datasets:');
+    console.log(datasets);
+
+    // Create the chart
+    const ctx = document.getElementById('chartCanvas').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: datasets
+      },
+      options: {
+        scales: {
+          yAxes: [{
+            ticks: {
+              beginAtZero: true
+            }
+          }]
+        },
+        title: {
+          display: true,
+          text: 'Marka Count'
+        },
+        tooltips: {
+          callbacks: {
+            label: (tooltipItem, data) => {
+              const datasetLabel = data.datasets[tooltipItem.datasetIndex].label;
+              const value = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+              return `${datasetLabel}: ${value}`;
+            }
+          }
+        }
+      }
+    });
+
+    console.log('Chart created');
+
+    // Add text to the chart
+    const chartText = document.getElementById('chartText');
+    chartText.textContent = 'This chart shows the count of each Marka in the dataset.';
+
+    // Create a dropdown menu to select the type of data to display
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    const dataTypes = ['Marka', 'Model', 'Year', 'Color'];
+    dataTypes.forEach(dataType => {
+      const option = document.createElement('option');
+      option.textContent = dataType;
+      option.value = dataType;
+      dropdownMenu.appendChild(option);
+    });
+
+    // Add an event listener to the dropdown menu to update the chart
+    dropdownMenu.addEventListener('change', () => {
+      const selectedDataType = dropdownMenu.value;
+      console.log(`Selected data type: ${selectedDataType}`);
+
+      // Update the chart to display the selected data type
+      const updatedLabels = [];
+      const updatedDatasets = [];
+      dataPoints.forEach(point => {
+        const value = point[dataTypes.indexOf(selectedDataType)];
+        updatedLabels.push(value);
+        updatedDatasets.push(point[0]);
+      });
+      chart.data.labels = updatedLabels;
+      chart.data.datasets[0].data = updatedDatasets;
+      chart.update();
+    });
+  })
+  .catch(error => {
+    console.error('Error loading JSON data:', error);
   });
   </script>
 </head>

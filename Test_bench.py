@@ -2,6 +2,7 @@ import requests
 import json
 from bs4 import BeautifulSoup
 import concurrent.futures
+import datetime
 import time
 
 link_list = []
@@ -159,8 +160,10 @@ def Car_types():
                     future.result()
                 except Exception as e:
                     print(f"Error: {e}")
-        
-        with open('Holder.json', 'w') as f:
+
+        current_datetime = datetime.datetime.now()
+        filename = current_datetime.strftime("%Y-%m-%d-%H-%M-%S") + ".json"
+        with open(filename, 'w') as f:
             json.dump(saved_data, f)
 
         print("Saved =========================")

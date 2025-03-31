@@ -1,0 +1,147 @@
+<html lang="en">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <canvas id="chartCanvas"></canvas>
+    <a href="webpage.html">Table</a>
+    <div id="chartText"></div>
+    <select id="jsonDropdown"></select>
+
+<select id="dropdownMenu"></select>
+</body>
+
+<script>
+// Get the dropdown elements
+const jsonDropdown = document.getElementById('jsonDropdown');
+const dropdownMenu = document.getElementById('dropdownMenu');
+
+
+function updateDropdownMenu(columnHeaders) {
+  dropdownMenu.innerHTML = '';
+  columnHeaders.forEach(header => {
+    const option = document.createElement('option');
+    option.textContent = header;
+    option.value = header;
+    dropdownMenu.appendChild(option);
+  });
+}
+
+let previousSelectedValue;
+
+function loadJsonData(selectedText) {
+  if (window.chart) window.chart.destroy();
+
+  fetch(`${selectedText}.json`)
+    .then(response => response.json())
+    .then(data => {
+      const columnHeaders = data[0];
+      const dataPoints = data.slice(1);
+      const markaCount = {};
+
+      dataPoints.forEach(point => {
+        const marka = point[0];
+        markaCount[marka] = (markaCount[marka] || 0) + 1;
+      });
+
+      const labels = Object.keys(markaCount).sort((a, b) => markaCount[b] - markaCount[a]);
+      const datasets = [{
+        label: 'Marka Count',
+        data: Object.values(markaCount).sort((a, b) => b - a),
+        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+        borderColor: 'rgba(255, 99, 132, 1)',
+        borderWidth: 1
+      }];
+
+      const ctx = document.getElementById('chartCanvas').getContext('2d');
+      window.chart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+          scales: { yAxes: [{ ticks: { beginAtZero: true } }] },
+          title: { display: true, text: 'Marka Count' },
+          tooltips: {
+            callbacks: {
+              label: (tooltipItem, data) => `${data.datasets[tooltipItem.datasetIndex].label}: ${data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index]}`
+            }
+          }
+        }
+      });
+
+      // Store the previously selected value
+      previousSelectedValue = dropdownMenu.value;
+
+      // Update the options of the existing dropdown menu
+      dropdownMenu.innerHTML = '';
+      columnHeaders.forEach(header => {
+        const option = document.createElement('option');
+        option.textContent = header;
+        option.value = header;
+        dropdownMenu.appendChild(option);
+      });
+
+      // Set the selected value of the dropdown menu to the previously selected value
+      dropdownMenu.value = columnHeaders.includes(previousSelectedValue) ? previousSelectedValue : columnHeaders[0];
+
+      dropdownMenu.addEventListener('change', () => {
+        const selectedDataType = dropdownMenu.value;
+        updateChart(selectedDataType, data);
+      });
+
+      updateChart(dropdownMenu.value, data);
+    })
+    .catch(error => console.error('Error loading JSON data:', error));
+}
+
+function updateChart(selectedDataType, data) {
+  const updatedLabels = [];
+  const updatedDatasets = [];
+  const dataPoints = data.slice(1);
+
+  dataPoints.forEach(point => {
+    const value = point[data[0].indexOf(selectedDataType)];
+    updatedLabels.push(value);
+  });
+
+  const uniqueLabels = [...new Set(updatedLabels)];
+  uniqueLabels.sort((a, b) => {
+    const countA = updatedLabels.filter(x => x === a).length;
+    const countB = updatedLabels.filter(x => x === b).length;
+    return countB - countA;
+  });
+
+  uniqueLabels.forEach(label => {
+    const count = updatedLabels.filter(x => x === label).length;
+    updatedDatasets.push(count);
+  });
+
+  window.chart.data.labels = uniqueLabels;
+  window.chart.data.datasets[0].data = updatedDatasets;
+  window.chart.update();
+}
+
+fetch('.')
+  .then(response => response.text())
+  .then(html => {
+    const files = html.match(/href="([^"]+\.json)"/g);
+    const jsonFileNames = files.map(file => file.replace(/href="|\.json"/g, '').replace(/\//g, ''));
+
+    jsonFileNames.forEach(option => {
+      const opt = document.createElement('option');
+      opt.value = option;
+      opt.text = option;
+      jsonDropdown.appendChild(opt);
+    });
+
+    jsonDropdown.addEventListener('change', () => {
+      const selectedText = jsonDropdown.options[jsonDropdown.selectedIndex].text;
+      loadJsonData(selectedText);
+    });
+
+    loadJsonData(jsonFileNames[0]);
+  });
+</script>
+</html>
